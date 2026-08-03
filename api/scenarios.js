@@ -11,10 +11,16 @@ const { put, list, del } = require("@vercel/blob");
 
 const PREFIX = "scenarios/";
 
+function nameFromPathname(pathname) {
+  let raw = pathname.slice(PREFIX.length).replace(/\.json$/, "");
+  raw = raw.replace(/^\d+__/, "");   // strip the timestamp prefix used by older saves
+  try { return decodeURIComponent(raw); } catch (e) { return raw; }
+}
+
 function itemFromBlob(b) {
   return {
     id: b.pathname,
-    name: decodeURIComponent(b.pathname.slice(PREFIX.length).replace(/\.json$/, "")),
+    name: nameFromPathname(b.pathname),
     uploadedAt: b.uploadedAt
   };
 }
@@ -48,7 +54,7 @@ module.exports = async function handler(req, res) {
 
       const pathname = PREFIX + encodeURIComponent(name) + ".json";
       const { blobs } = await list({ prefix: PREFIX });
-      if (blobs.some(b => b.pathname === pathname))
+      if (blobs.some(b => nameFromPathname(b.pathname) === name))
         return res.status(409).json({ error: "a set with that name already exists" });
 
       const doc = { name, savedAt: new Date().toISOString(), state };
