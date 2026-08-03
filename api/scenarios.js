@@ -7,7 +7,7 @@
 // Requires a Vercel Blob store connected to the project (BLOB_READ_WRITE_TOKEN
 // is set automatically when you connect one — no manual env vars needed).
 
-const { put, list, del } = require("@vercel/blob");
+import { put, list, del } from "@vercel/blob";
 
 const PREFIX = "scenarios/";
 
@@ -25,7 +25,7 @@ function itemFromBlob(b) {
   };
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const id = req.query && req.query.id;
@@ -81,4 +81,4 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ error: String((err && err.message) || err) });
   }
-};
+}
