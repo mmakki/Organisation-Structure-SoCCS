@@ -56,21 +56,18 @@ async function downloadJson(b) {
   throw lastErr || new Error("download failed");
 }
 
-// Save preferring private access (matches private stores); fall back to public.
+// Save trying the store's default access first (newer SDKs: omitting `access`
+// lets a private store stay private), then explicit private, then explicit
+// public — so it works across SDK versions and store types.
 async function saveBlob(pathname, payload) {
   const base = { contentType: "application/json", addRandomSuffix: false, token: TOKEN };
-  try {
-    return await put(pathname, payload, { ...base, access: "private" });
-  } catch (ePriv) {
-    try {
-      return await put(pathname, payload, { ...base, access: "public" });
-    } catch (ePub) {
-      throw new Error(
-        "save failed - private attempt: " + (ePriv && ePriv.message || ePriv) +
-        " || public attempt: " + (ePub && ePub.message || ePub)
-      );
-    }
+  const attempts = [base, { ...base, access: "private" }, { ...base, access: "public" }];
+  const errs = [];
+  for (const opts of attempts) {
+    try { return await put(pathname, payload, opts); }
+    catch (e) { errs.push((e && e.message) || String(e)); }
   }
+  throw new Error("save failed - " + errs.join(" || "));
 }
 
 module.exports = async (req, res) => {
